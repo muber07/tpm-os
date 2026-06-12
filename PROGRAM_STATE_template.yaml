@@ -1,0 +1,161 @@
+# =============================================================================
+# TPM OS — PROGRAM STATE TEMPLATE
+# Schema version: 1.0
+# Program registry: PROGRAMS.yaml
+#
+# HOW TO USE:
+#   Copy this file to PROGRAM_STATE_<program_key>.yaml.
+#   Run "onboard new program [name]" — Claude will populate fields from live sources.
+#   Fields marked [REQUIRED] must be filled before running the agent chain.
+#   Fields marked [AUTO] are populated by agents during onboarding.
+#
+# STALENESS RULE: Any field with last_verified older than 7 days must be
+# re-verified before appearing in executive output.
+# GROUND TRUTH RULE: Never update from memory alone. Pull live from Jira first.
+# =============================================================================
+
+program_state:
+  metadata:
+    name: "[REQUIRED] Program Name"                 # e.g. "UK Earner Lending (In-House)"
+    key: "[REQUIRED] program_key"                   # e.g. "uk_earner_lending" — matches PROGRAMS.yaml key
+    status: draft                                   # draft | active | paused | completed
+    schema_version: "1.0"
+    onboarded: "[AUTO] YYYY-MM-DD"
+    last_full_pipeline_run: null                    # [AUTO] set by agent chain
+
+    owners:
+      tpm: "[REQUIRED] email@uber.com"
+      pm: null
+      eng_lead: null
+      eng_director: null
+      eng_vp: null
+      gpm: null
+      compliance_lead: null
+      dir_eng: null
+
+    stakeholders: []                                # [AUTO] discovered during onboarding
+      # - email@uber.com (Name - Role)
+
+    cadence:
+      # [REQUIRED] List recurring syncs for this program
+      # weekly_tech_xfn: Day + time
+      # weekly_xfn_core: channel name
+
+  source_documents:
+    # [REQUIRED] Paste URLs as they're found. Agents will ingest from these.
+    prd: {}
+      # program_prd: https://docs.google.com/document/d/...
+
+    erds: {}
+      # master_erd: https://docs.google.com/document/d/...
+
+    program_plan: null
+    open_questions_doc: null
+    task_tracker: null
+    dependency_tracker: null
+
+    codebase:
+      services: {}                                  # [AUTO] discovered during onboarding
+      reviewers: null
+
+    jira:
+      project_keys: []                              # [REQUIRED] e.g. [FPLENDING, FPEARLE]
+      p0_deps: []                                   # [AUTO] populated by jira-ingestor
+      p1_deps: []                                   # [AUTO]
+      full_dependreq_status:
+        committed: []
+        not_committed: []
+        stalled: []
+        closed_confirmed_misc: []
+
+  slack_channels: []                                # [AUTO] discovered or provided
+    # - CHANNEL_ID  # channel-name
+
+  dm_group_threads: []                              # [AUTO] discovered or provided
+    # - DM_ID  # description
+
+  milestones:
+    # [AUTO] populated from PRD + Jira during onboarding.
+    # Agents fill status, confidence, last_verified, jira_evidence, blockers.
+    #
+    # Template per milestone:
+    # - id: M1
+    #   name: "[Milestone name]"
+    #   scope: "[Brief scope description]"
+    #   owners: []
+    #   status: NOT_STARTED     # NOT_STARTED | IN_DESIGN | IN_EXECUTION | AT_RISK | BLOCKED | COMPLETED
+    #   confidence: null        # HIGH | MEDIUM_HIGH | MEDIUM | LOW | VERY_LOW
+    #   last_verified: null
+    #   target: null
+    #   jira_evidence: []
+    #   blockers: []
+
+  launch_date:
+    contradicted: false
+    sources: {}                                     # [AUTO] one entry per source doc that mentions a date
+    best_estimate: null                             # [AUTO] set by Context Fusion Agent
+    confidence: null
+
+  risks:
+    # [AUTO] populated during onboarding and updated on every risk pulse.
+    #
+    # Template per risk:
+    # - id: R1
+    #   description: "[Risk description]"
+    #   flag: null              # RED | YELLOW | GREEN
+    #   probability: null       # HIGH | MEDIUM | LOW
+    #   impact: null            # CRITICAL | HIGH | MEDIUM | LOW
+    #   trend: null             # WORSENING | STABLE | IMPROVING | CLOSED
+    #   owner: null
+    #   mitigation: "[What's being done]"
+    #   last_verified: null
+
+  dependencies:
+    # [AUTO] populated by jira-ingestor from DEPENDREQs.
+    #
+    # Template per dependency:
+    # - id: DEPENDREQ-XXXXX
+    #   description: "[What this unblocks]"
+    #   priority: P0            # P0 | P1 | P2
+    #   status: null            # COMMITTED | NOT_COMMITTED | STALLED | CLOSED
+    #   owner: null
+    #   last_verified: null
+    #   last_jira_update: null
+    #   stale: false
+
+  decisions:
+    # [AUTO] populated by decision-memory-engine.
+    # - date: YYYY-MM-DD
+    #   decision: "[What was decided]"
+    #   owner: "[Who decided]"
+    #   source: "[Jira ticket / Slack link / Doc URL]"
+    #   context: "[Brief context]"
+
+  unresolved_questions:
+    # [AUTO] populated during ingestion and planning.
+    # - id: Q1
+    #   question: "[The open question]"
+    #   owner: null             # person responsible for answering
+    #   raised: YYYY-MM-DD
+    #   last_checked: null
+    #   blocking: []            # milestone or risk IDs this blocks
+
+  contradictions:
+    # [AUTO] populated by contradiction-detector.
+    # - id: C1
+    #   dimension: "[What the contradiction is about]"
+    #   source_a: "[Source A claim + URL]"
+    #   source_b: "[Source B claim + URL]"
+    #   resolution: null        # null = unresolved
+    #   resolved_by: null
+
+  evidence_store:
+    last_updated: null                              # [AUTO] timestamp of last full ingestion
+    sources_last_ingested: {}                       # [AUTO] per-source timestamps
+    # source_url_or_id: YYYY-MM-DD
+
+  execution_verification:
+    last_run: null                                  # [AUTO]
+    fake_green_flags: []                            # [AUTO]
+    stalled_streams: []                             # [AUTO]
+    confidence_by_milestone: {}                     # [AUTO] milestone_id: confidence_level

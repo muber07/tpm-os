@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TPM OS — AI-Powered TPM Execution Intelligence</title>
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #4338ca;
+    --accent-light: #eef2ff;
+    --radius: 14px;
+    --shadow: 0 1px 4px rgba(0,0,0,.06), 0 6px 20px rgba(0,0,0,.06);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,.1), 0 16px 40px rgba(0,0,0,.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* ── NAV ── */
+  nav { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 200; }
+  .nav-inner { max-width: 1140px; margin: 0 auto; padding: 0 28px; display: flex; align-items: center; gap: 20px; height: 58px; }
+  .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; white-space: nowrap; }
+  .nav-logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg, #4338ca, #7c3aed); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .nav-logo-text { background: linear-gradient(135deg, #4338ca, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .nav-tabs { display: flex; gap: 2px; margin-left: auto; background: var(--bg); border-radius: 10px; padding: 3px; }
+  .nav-tab { padding: 6px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: none; color: var(--muted); transition: all .2s; }
+  .nav-tab:hover { color: var(--accent); }
+  .nav-tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+  /* ── PANELS ── */
+  .panel { display: none; animation: panel-in .3s ease; }
+  .panel.active { display: block; }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── HERO BAND ── */
+  .hero-band {
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    position: relative; overflow: hidden; padding: 64px 28px 72px;
+  }
+  .hero-band::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,.25) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 20%, rgba(124,58,237,.2) 0%, transparent 50%);
+  }
+  .hero-grid { position: absolute; inset: 0; opacity: .06;
+    background-image: linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px);
+    background-size: 40px 40px; }
+  .hero-inner { max-width: 1140px; margin: 0 auto; display: grid; grid-template-columns: 1fr 340px; gap: 56px; align-items: center; position: relative; z-index: 1; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); color: #a5b4fc; border-radius: 999px; padding: 4px 14px; font-size: 12px; font-weight: 600; margin-bottom: 20px; backdrop-filter: blur(4px); }
+  .hero h1 { font-size: 40px; font-weight: 900; line-height: 1.1; color: #fff; margin-bottom: 18px; letter-spacing: -.02em; }
+  .hero h1 em { font-style: normal; background: linear-gradient(90deg, #a5b4fc, #c4b5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 16px; color: #94a3b8; line-height: 1.75; margin-bottom: 28px; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-primary { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; box-shadow: 0 4px 14px rgba(99,102,241,.4); transition: all .2s; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,.5); }
+  .btn-secondary { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.1); color: #e2e8f0; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .btn-secondary:hover { background: rgba(255,255,255,.18); }
+
+  /* MINI PIPELINE (hero right) */
+  .mini-pipeline { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15); border-radius: 16px; padding: 22px; backdrop-filter: blur(8px); }
+  .mini-pipeline-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin-bottom: 16px; color: #94a3b8; }
+  .mp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .mp-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; border: 1.5px solid; }
+  .mp-text strong { font-size: 13px; color: #e2e8f0; display: block; }
+  .mp-text span { font-size: 11px; color: #64748b; }
+  .mp-arrow { font-size: 10px; color: #334155; margin: -4px 0 6px 14px; }
+  .mp-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 14px; padding: 4px 10px; background: rgba(22,163,74,.15); border: 1px solid rgba(22,163,74,.3); border-radius: 999px; font-size: 11px; color: #86efac; }
+
+  /* ── MAIN CONTENT ── */
+  .content-wrap { max-width: 1140px; margin: 0 auto; padding: 48px 28px 80px; }
+
+  /* SECTION HEADER */
+  .sh { margin-bottom: 28px; }
+  .sh h2 { font-size: 24px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.01em; }
+  .sh h2 span { color: var(--accent); }
+  .sh p { font-size: 15px; color: var(--muted); }
+  .sh-line { width: 40px; height: 3px; background: linear-gradient(90deg, var(--accent), #7c3aed); border-radius: 2px; margin-bottom: 14px; }
+
+  /* BENEFITS GRID */
+  .benefits-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 56px; }
+  .benefit-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 18px; box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s; position: relative; overflow: hidden; }
+  .benefit-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+  .bc-cyan::after { background: linear-gradient(90deg, #0891b2, #06b6d4); }
+  .bc-indigo::after { background: linear-gradient(90deg, #4338ca, #6366f1); }
+  .bc-rose::after { background: linear-gradient(90deg, #9f1239, #e11d48); }
+  .bc-green::after { background: linear-gradient(90deg, #15803d, #22c55e); }
+  .bc-violet::after { background: linear-gradient(90deg, #5b21b6, #8b5cf6); }
+  .bc-emerald::after { background: linear-gradient(90deg, #065f46, #10b981); }
+  .bc-blue::after { background: linear-gradient(90deg, #1d4ed8, #3b82f6); }
+  .bc-purple::after { background: linear-gradient(90deg, #7e22ce, #a855f7); }
+  .benefit-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .benefit-icon { font-size: 22px; margin-bottom: 12px; margin-top: 6px; }
+  .benefit-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 7px; }
+  .benefit-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* DIAGRAM SECTION */
+  .diagram-section { margin-bottom: 56px; }
+  .diagram-wrap { display: grid; grid-template-columns: 580px 1fr; gap: 28px; align-items: start; }
+  .diagram-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 16px; box-shadow: var(--shadow); position: relative; }
+  .diagram-controls { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .ctrl-btn { padding: 5px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--muted); transition: all .15s; }
+  .ctrl-btn:hover, .ctrl-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .ctrl-hint { font-size: 11px; color: var(--muted); margin-left: auto; }
+  #orbital-svg { width: 100%; height: auto; display: block; }
+
+  /* Node animations */
+  .orbital-node { cursor: pointer; }
+  .node-ring { fill: none; stroke-width: 2; opacity: 0; }
+  .orbital-node.active .node-ring { animation: pulse-ring 1.4s ease-out infinite; }
+  @keyframes pulse-ring {
+    0% { opacity: .7; r: 36; }
+    100% { opacity: 0; r: 54; }
+  }
+  .orbital-node circle.node-fill { transition: filter .2s; }
+  .orbital-node:hover circle.node-fill { filter: brightness(1.06); }
+  .orbital-node.active circle.node-fill { filter: drop-shadow(0 0 10px var(--node-color, #4338ca)); }
+
+  /* DETAIL PANEL */
+  .detail-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 26px; box-shadow: var(--shadow); min-height: 360px; }
+  .detail-inner { animation: fade-up .25s ease; }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .detail-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 310px; gap: 14px; }
+  .detail-placeholder .dp-icon { font-size: 36px; opacity: .4; }
+  .detail-placeholder p { font-size: 14px; color: var(--muted); text-align: center; }
+  .detail-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .d-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; border: 1.5px solid; }
+  .detail-header h3 { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
+  .detail-header .d-sub { font-size: 12px; color: var(--muted); }
+  .detail-row { display: flex; gap: 10px; margin-bottom: 10px; font-size: 13px; align-items: flex-start; line-height: 1.55; }
+  .who { padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 800; text-transform: uppercase; flex-shrink: 0; margin-top: 1px; letter-spacing: .03em; }
+  .who-auto { background: #dbeafe; color: #1d4ed8; }
+  .who-you { background: #dcfce7; color: #15803d; }
+  .who-loop { background: #fef3c7; color: #b45309; }
+  .detail-io { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .detail-io h4 { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 8px; }
+  .detail-io ul { list-style: none; font-size: 12px; color: var(--muted); }
+  .detail-io li { padding: 3px 0; display: flex; gap: 5px; }
+  .detail-io li::before { content: '→'; color: var(--accent); flex-shrink: 0; }
+
+  /* AGENT CARDS */
+  .agent-cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .agent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); cursor: pointer; transition: all .2s; border-left: 3px solid transparent; }
+  .agent-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .agent-card.expanded { border-left-color: var(--ac-color, var(--accent)); }
+  .ac-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .ac-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; border: 1.5px solid; }
+  .ac-header h3 { font-size: 13px; font-weight: 800; }
+  .ac-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .ac-body { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .ac-footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); display: none; }
+  .agent-card.expanded .ac-footer { display: block; }
+  .ac-link { font-size: 12px; font-weight: 600; text-decoration: none; }
+  .ac-link:hover { text-decoration: underline; }
+
+  /* ACCORDION */
+  .phase-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; box-shadow: var(--shadow); border-left: 4px solid transparent; transition: border-color .2s; }
+  .phase-item.open { border-left-color: var(--pi-color, var(--accent)); }
+  .phase-header { display: flex; align-items: center; gap: 14px; padding: 16px 20px; cursor: pointer; user-select: none; }
+  .phase-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #fff; flex-shrink: 0; }
+  .phase-header h3 { font-size: 14px; font-weight: 800; flex: 1; }
+  .phase-header .phase-sub { font-size: 12px; color: var(--muted); }
+  .phase-chevron { width: 20px; height: 20px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--muted); transition: transform .25s; margin-left: auto; flex-shrink: 0; }
+  .phase-item.open .phase-chevron { transform: rotate(180deg); }
+  .phase-body { max-height: 0; overflow: hidden; transition: max-height .35s ease; }
+  .phase-item.open .phase-body { max-height: 600px; }
+  .phase-body-inner { padding: 0 20px 20px; }
+  .phase-body-inner p { font-size: 13.5px; color: var(--muted); line-height: 1.75; margin-bottom: 16px; }
+  .phase-io { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px; }
+  .phase-io h4 { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 8px; }
+  .phase-io ul { list-style: none; color: var(--muted); }
+  .phase-io li { padding: 4px 0; display: flex; gap: 6px; font-size: 12.5px; }
+  .phase-io li::before { content: '→'; color: var(--accent); flex-shrink: 0; }
+
+  /* GET STARTED */
+  .setup-steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 40px; }
+  .setup-step { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+  .step-num-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #4338ca, #7c3aed); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; flex-shrink: 0; }
+  .step-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .setup-step h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+  .setup-step p { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 10px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 16px 18px; font-size: 12px; line-height: 1.75; overflow-x: auto; margin-top: 10px; border: 1px solid #1e293b; }
+  code { font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace; }
+  .inline-code { font-family: monospace; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 12px; color: var(--accent); }
+  .dir-tree { margin: 24px 0 40px; }
+  .cmd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .cmd-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); transition: all .2s; }
+  .cmd-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .cmd-card h4 { font-size: 13px; font-weight: 800; margin-bottom: 8px; }
+  .cmd-code { font-size: 11.5px; background: #f8fafc; border: 1px solid var(--border); padding: 6px 10px; border-radius: 7px; margin-bottom: 8px; color: var(--accent); font-family: monospace; display: block; }
+  .cmd-card p { font-size: 12px; color: var(--muted); line-height: 1.55; }
+
+  /* SKILLS */
+  .skills-cats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 28px; }
+  .skill-cat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+  .skill-cat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .skill-cat-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .skill-cat h3 { font-size: 15px; font-weight: 800; }
+  .skill-cat-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .skill-pill { display: inline-flex; align-items: center; font-size: 11.5px; padding: 4px 11px; border-radius: 999px; font-weight: 600; cursor: default; transition: transform .15s; }
+  .skill-pill:hover { transform: scale(1.04); }
+  .pill-blue { background: #dbeafe; color: #1d4ed8; }
+  .pill-violet { background: #ede9fe; color: #6d28d9; }
+  .pill-emerald { background: #d1fae5; color: #065f46; }
+  .skills-special { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .special-card { border-radius: 16px; padding: 24px; box-shadow: var(--shadow); }
+  .da-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+  .da-cat-item { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #64748b; background: rgba(255,255,255,.6); padding: 6px 10px; border-radius: 8px; }
+
+  /* FLOW DOT ANIMATION */
+  .flow-dot { pointer-events: none; }
+
+  /* Active node highlight ring */
+  @keyframes ring-out {
+    0% { stroke-opacity: .6; r: 38; }
+    100% { stroke-opacity: 0; r: 56; }
+  }
+  .active-ring { animation: ring-out 1.4s ease-out infinite; }
+
+  /* Responsive */
+  @media (max-width: 960px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .mini-pipeline { display: none; }
+    .benefits-grid { grid-template-columns: repeat(2, 1fr); }
+    .diagram-wrap { grid-template-columns: 1fr; }
+    .agent-cards-grid { grid-template-columns: repeat(2, 1fr); }
+    .setup-steps { grid-template-columns: 1fr; }
+    .skills-cats { grid-template-columns: 1fr; }
+    .skills-special { grid-template-columns: 1fr; }
+    .cmd-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="nav-logo-icon">🤖</div>
+      <span class="nav-logo-text">TPM OS</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPanel('overview',this)">Overview</button>
+      <button class="nav-tab" onclick="showPanel('pipeline',this)">Pipeline</button>
+      <button class="nav-tab" onclick="showPanel('getstarted',this)">Get Started</button>
+      <button class="nav-tab" onclick="showPanel('skills',this)">Skills</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<div class="hero-band">
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div class="hero">
+      <div class="hero-badge">🤖 AI-Powered &nbsp;·&nbsp; Multi-Program &nbsp;·&nbsp; Evidence-First</div>
+      <h1>TPM OS:<br><em>Execution Intelligence</em><br>for Program Managers</h1>
+      <p>An autonomous 8-stage pipeline that gathers signals from Jira, Slack, and docs — proposes state updates with confidence scoring — challenges every claim with evidence — then stops for your approval before anything commits.</p>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="showPanel('getstarted',document.querySelectorAll('.nav-tab')[2])">Get Started →</button>
+        <button class="btn-secondary" onclick="showPanel('pipeline',document.querySelectorAll('.nav-tab')[1])">View Pipeline</button>
+      </div>
+    </div>
+    <div class="mini-pipeline">
+      <div class="mini-pipeline-title">8-Stage Pipeline</div>
+      <div class="mp-row"><div class="mp-dot" style="background:#083344;border-color:#0891b2;">📡</div><div class="mp-text"><strong>SignalFetcher</strong><span>Jira · Slack · Docs</span></div></div>
+      <div class="mp-arrow">↓</div>
+      <div class="mp-row"><div class="mp-dot" style="background:#1e1b4b;border-color:#4338ca;">🧠</div><div class="mp-text"><strong>Synthesizer</strong><span>Proposes state delta</span></div></div>
+      <div class="mp-arrow">↓</div>
+      <div class="mp-row"><div class="mp-dot" style="background:#4c0519;border-color:#be123c;">⚡</div><div class="mp-text"><strong>Contradiction Detector</strong><span>Surfaces conflicts</span></div></div>
+      <div class="mp-arrow">↓</div>
+      <div class="mp-row"><div class="mp-dot" style="background:#4c0519;border-color:#9f1239;">😈</div><div class="mp-text"><strong>Devil's Advocate</strong><span>Challenges with evidence</span></div></div>
+      <div class="mp-arrow">↓</div>
+      <div class="mp-row"><div class="mp-dot" style="background:#052e16;border-color:#16a34a;border-style:dashed;">✅</div><div class="mp-text"><strong>You Approve</strong><span>No auto-advance</span></div></div>
+      <div class="mp-arrow">↓</div>
+      <div class="mp-row"><div class="mp-dot" style="background:#2e1065;border-color:#5b21b6;">🔍</div><div class="mp-text"><strong>Verifier</strong><span>Live cross-check</span></div></div>
+      <div class="mp-arrow">↓</div>
+      <div class="mp-row"><div class="mp-dot" style="background:#022c22;border-color:#065f46;">📄</div><div class="mp-text"><strong>Renderer</strong><span>Generate outputs</span></div></div>
+      <div class="mp-arrow">↓</div>
+      <div class="mp-row"><div class="mp-dot" style="background:#1e3a8a;border-color:#1d4ed8;">🚀</div><div class="mp-text"><strong>Publisher</strong><span>Distribute & archive</span></div></div>
+      <div class="mp-badge">✓ Human approval gate · No auto-advance</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ OVERVIEW ═══════════════════════ -->
+<div class="panel active" id="panel-overview">
+  <div class="content-wrap">
+
+    <div class="sh">
+      <div class="sh-line"></div>
+      <h2>Why <span>TPM OS</span></h2>
+      <p>Running a program means synthesizing dozens of signals every day. TPM OS automates the gathering so you can focus on the decisions.</p>
+    </div>
+
+    <div class="benefits-grid">
+      <div class="benefit-card bc-cyan">
+        <div class="benefit-icon">📡</div>
+        <h3>Ground-truth gathering</h3>
+        <p>Pulls Jira, Slack DMs, and docs automatically. Every field traces back to a specific source with a timestamp.</p>
+      </div>
+      <div class="benefit-card bc-indigo">
+        <div class="benefit-icon">🧠</div>
+        <h3>Confidence scoring</h3>
+        <p>HIGH (2+ sources), MEDIUM (1 source), LOW (inferred). Know how certain the system is before you act.</p>
+      </div>
+      <div class="benefit-card bc-rose">
+        <div class="benefit-icon">😈</div>
+        <h3>Devil's Advocate built in</h3>
+        <p>Every proposed update is adversarially challenged across 6 categories. Challenges must cite a ticket ID or Slack timestamp.</p>
+      </div>
+      <div class="benefit-card bc-green">
+        <div class="benefit-icon">✅</div>
+        <h3>You stay in control</h3>
+        <p>The pipeline never auto-advances past the human approval gate. Full context — one screen.</p>
+      </div>
+      <div class="benefit-card bc-violet">
+        <div class="benefit-icon">🔍</div>
+        <h3>Verified state</h3>
+        <p>The Verifier cross-checks against live Jira and Slack. Each field is stamped with a <span class="inline-code">verified_at</span> date.</p>
+      </div>
+      <div class="benefit-card bc-emerald">
+        <div class="benefit-icon">📄</div>
+        <h3>Instant outputs</h3>
+        <p>Newsletter, exec brief, risk tracker, escalation memo — generated from verified state. Every claim is sourced.</p>
+      </div>
+      <div class="benefit-card bc-blue">
+        <div class="benefit-icon">📂</div>
+        <h3>Multi-program by design</h3>
+        <p>One config per program under <span class="inline-code">programs/[name]/</span>. Skills are program-agnostic.</p>
+      </div>
+      <div class="benefit-card bc-purple">
+        <div class="benefit-icon">🔓</div>
+        <h3>Any org, any program</h3>
+        <p>No vendor lock-in. Configure your data sources in YAML and the full pipeline works for any program.</p>
+      </div>
+    </div>
+
+    <!-- ORBITAL DIAGRAM -->
+    <div class="diagram-section">
+      <div class="sh">
+        <div class="sh-line"></div>
+        <h2>Agent <span>Pipeline</span></h2>
+        <p>Click any agent node to see what it does, reads, and writes. Use Auto-Play to watch the pipeline flow.</p>
+      </div>
+      <div class="diagram-wrap">
+        <div class="diagram-box">
+          <div class="diagram-controls">
+            <button class="ctrl-btn" id="btn-autoplay" onclick="toggleAutoPlay()">▶ Auto-Play</button>
+            <button class="ctrl-btn" onclick="stepNext()">Next →</button>
+            <span class="ctrl-hint">or click any node</span>
+          </div>
+          <svg id="orbital-svg" viewBox="0 0 720 600" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <polygon points="0 0, 6 3, 0 6" fill="#94a3b8"/>
+              </marker>
+              <marker id="arr-amber" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <polygon points="0 0, 6 3, 0 6" fill="#f59e0b"/>
+              </marker>
+              <!-- glow filters per color -->
+              <filter id="glow-cyan"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glow-indigo"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glow-rose"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glow-green"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+
+            <!-- Orbit ring -->
+            <circle cx="360" cy="300" r="200" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="5 5" fill="none"/>
+
+            <!-- Flow paths with IDs for animateMotion -->
+            <path id="p-sig-syn" d="M 381 108 Q 490 125 498 156" stroke="#cbd5e1" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path id="p-syn-cd" d="M 521 177 Q 557 228 557 295" stroke="#cbd5e1" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path id="p-cd-da" d="M 554 322 Q 538 405 503 430" stroke="#cbd5e1" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path id="p-da-hum" d="M 482 451 Q 442 492 380 498" stroke="#cbd5e1" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path id="p-hum-ver" d="M 340 498 Q 278 492 237 451" stroke="#cbd5e1" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path id="p-ver-ren" d="M 217 428 Q 178 393 163 322" stroke="#cbd5e1" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path id="p-ren-pub" d="M 163 278 Q 179 203 219 165" stroke="#cbd5e1" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path id="p-pub-sig" d="M 240 148 Q 302 110 342 103" stroke="#cbd5e1" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+
+            <!-- DA rejected backtrack (amber dashed) -->
+            <path id="p-da-back" d="M 492 422 Q 535 345 535 265 Q 532 200 503 162" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="6 4" fill="none" marker-end="url(#arr-amber)"/>
+            <text x="549" y="300" font-size="9" fill="#f59e0b" font-family="sans-serif" font-weight="600">rejected</text>
+            <text x="549" y="311" font-size="9" fill="#f59e0b" font-family="sans-serif" font-weight="600">→ re-run</text>
+
+            <!-- Flow dots (animateMotion) -->
+            <circle r="5" fill="#6366f1" opacity="0.7" class="flow-dot">
+              <animateMotion dur="2.8s" repeatCount="indefinite" begin="0s" rotate="auto"><mpath href="#p-sig-syn"/></animateMotion>
+            </circle>
+            <circle r="5" fill="#4338ca" opacity="0.7" class="flow-dot">
+              <animateMotion dur="2.2s" repeatCount="indefinite" begin="0.7s" rotate="auto"><mpath href="#p-syn-cd"/></animateMotion>
+            </circle>
+            <circle r="5" fill="#be123c" opacity="0.7" class="flow-dot">
+              <animateMotion dur="2.4s" repeatCount="indefinite" begin="1.3s" rotate="auto"><mpath href="#p-cd-da"/></animateMotion>
+            </circle>
+            <circle r="5" fill="#9f1239" opacity="0.7" class="flow-dot">
+              <animateMotion dur="2.6s" repeatCount="indefinite" begin="2.1s" rotate="auto"><mpath href="#p-da-hum"/></animateMotion>
+            </circle>
+            <circle r="5" fill="#16a34a" opacity="0.7" class="flow-dot">
+              <animateMotion dur="2.4s" repeatCount="indefinite" begin="2.8s" rotate="auto"><mpath href="#p-hum-ver"/></animateMotion>
+            </circle>
+            <circle r="5" fill="#5b21b6" opacity="0.7" class="flow-dot">
+              <animateMotion dur="2.3s" repeatCount="indefinite" begin="3.4s" rotate="auto"><mpath href="#p-ver-ren"/></animateMotion>
+            </circle>
+            <circle r="5" fill="#065f46" opacity="0.7" class="flow-dot">
+              <animateMotion dur="2.5s" repeatCount="indefinite" begin="3.9s" rotate="auto"><mpath href="#p-ren-pub"/></animateMotion>
+            </circle>
+            <circle r="5" fill="#1d4ed8" opacity="0.7" class="flow-dot">
+              <animateMotion dur="2.2s" repeatCount="indefinite" begin="4.5s" rotate="auto"><mpath href="#p-pub-sig"/></animateMotion>
+            </circle>
+
+            <!-- NODES -->
+            <!-- SignalFetcher (360, 100) -->
+            <g class="orbital-node" id="node-sig" onclick="selectNode('sig')" style="--node-color:#0891b2">
+              <circle class="node-ring active-ring" cx="360" cy="100" r="40" stroke="#0891b2" id="ring-sig" style="display:none"/>
+              <circle class="node-fill" cx="360" cy="100" r="34" fill="#ecfeff" stroke="#0891b2" stroke-width="2.5"/>
+              <text x="360" y="93" text-anchor="middle" font-size="17">📡</text>
+              <text x="360" y="108" text-anchor="middle" font-size="10" font-weight="800" fill="#0c4a6e">Signal</text>
+              <text x="360" y="119" text-anchor="middle" font-size="10" font-weight="800" fill="#0c4a6e">Fetcher</text>
+            </g>
+            <!-- Synthesizer (501, 159) -->
+            <g class="orbital-node" id="node-syn" onclick="selectNode('syn')" style="--node-color:#4338ca">
+              <circle class="node-ring" cx="501" cy="159" r="36" stroke="#4338ca" id="ring-syn" style="display:none"/>
+              <circle class="node-fill" cx="501" cy="159" r="30" fill="#eef2ff" stroke="#4338ca" stroke-width="2.5"/>
+              <text x="501" y="153" text-anchor="middle" font-size="15">🧠</text>
+              <text x="501" y="166" text-anchor="middle" font-size="10" font-weight="800" fill="#312e81">Synth</text>
+              <text x="501" y="177" text-anchor="middle" font-size="9.5" font-weight="800" fill="#312e81">esizer</text>
+            </g>
+            <!-- ContradictionDetector (560, 300) -->
+            <g class="orbital-node" id="node-cd" onclick="selectNode('cd')" style="--node-color:#be123c">
+              <circle class="node-ring" cx="560" cy="300" r="36" stroke="#be123c" id="ring-cd" style="display:none"/>
+              <circle class="node-fill" cx="560" cy="300" r="30" fill="#fff1f2" stroke="#be123c" stroke-width="2.5"/>
+              <text x="560" y="294" text-anchor="middle" font-size="15">⚡</text>
+              <text x="560" y="308" text-anchor="middle" font-size="9" font-weight="800" fill="#881337">Contra</text>
+              <text x="560" y="318" text-anchor="middle" font-size="9" font-weight="800" fill="#881337">diction</text>
+            </g>
+            <!-- DevilsAdvocate (501, 441) -->
+            <g class="orbital-node" id="node-da" onclick="selectNode('da')" style="--node-color:#9f1239">
+              <circle class="node-ring" cx="501" cy="441" r="36" stroke="#9f1239" id="ring-da" style="display:none"/>
+              <circle class="node-fill" cx="501" cy="441" r="30" fill="#fff1f2" stroke="#9f1239" stroke-width="2.5"/>
+              <text x="501" y="435" text-anchor="middle" font-size="15">😈</text>
+              <text x="501" y="448" text-anchor="middle" font-size="9" font-weight="800" fill="#881337">Devil's</text>
+              <text x="501" y="458" text-anchor="middle" font-size="9" font-weight="800" fill="#881337">Advocate</text>
+            </g>
+            <!-- YouApprove (360, 500) dashed -->
+            <g class="orbital-node" id="node-human" onclick="selectNode('human')" style="--node-color:#16a34a">
+              <circle class="node-ring" cx="360" cy="500" r="38" stroke="#16a34a" id="ring-human" style="display:none"/>
+              <circle class="node-fill" cx="360" cy="500" r="32" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.5" stroke-dasharray="7 3"/>
+              <text x="360" y="493" text-anchor="middle" font-size="15">✅</text>
+              <text x="360" y="507" text-anchor="middle" font-size="10" font-weight="800" fill="#14532d">You</text>
+              <text x="360" y="518" text-anchor="middle" font-size="10" font-weight="800" fill="#14532d">Approve</text>
+            </g>
+            <!-- Verifier (219, 441) -->
+            <g class="orbital-node" id="node-ver" onclick="selectNode('ver')" style="--node-color:#5b21b6">
+              <circle class="node-ring" cx="219" cy="441" r="36" stroke="#5b21b6" id="ring-ver" style="display:none"/>
+              <circle class="node-fill" cx="219" cy="441" r="30" fill="#f5f3ff" stroke="#5b21b6" stroke-width="2.5"/>
+              <text x="219" y="435" text-anchor="middle" font-size="15">🔍</text>
+              <text x="219" y="449" text-anchor="middle" font-size="10" font-weight="800" fill="#2e1065">Verifier</text>
+            </g>
+            <!-- Renderer (160, 300) -->
+            <g class="orbital-node" id="node-ren" onclick="selectNode('ren')" style="--node-color:#065f46">
+              <circle class="node-ring" cx="160" cy="300" r="36" stroke="#065f46" id="ring-ren" style="display:none"/>
+              <circle class="node-fill" cx="160" cy="300" r="30" fill="#ecfdf5" stroke="#065f46" stroke-width="2.5"/>
+              <text x="160" y="294" text-anchor="middle" font-size="15">📄</text>
+              <text x="160" y="308" text-anchor="middle" font-size="10" font-weight="800" fill="#064e3b">Renderer</text>
+            </g>
+            <!-- Publisher (219, 159) -->
+            <g class="orbital-node" id="node-pub" onclick="selectNode('pub')" style="--node-color:#1d4ed8">
+              <circle class="node-ring" cx="219" cy="159" r="36" stroke="#1d4ed8" id="ring-pub" style="display:none"/>
+              <circle class="node-fill" cx="219" cy="159" r="30" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5"/>
+              <text x="219" y="153" text-anchor="middle" font-size="15">🚀</text>
+              <text x="219" y="167" text-anchor="middle" font-size="10" font-weight="800" fill="#1e3a8a">Publisher</text>
+            </g>
+
+            <!-- Center -->
+            <text x="360" y="293" text-anchor="middle" font-size="14" font-weight="900" fill="#334155">TPM OS</text>
+            <text x="360" y="311" text-anchor="middle" font-size="11" fill="#94a3b8">8 agents</text>
+          </svg>
+        </div>
+
+        <div class="detail-panel" id="detail-panel">
+          <div class="detail-placeholder">
+            <div class="dp-icon">🖱️</div>
+            <p>Click any agent node<br>to see what it does,<br>reads, and writes</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENT CARDS -->
+    <div class="sh" style="margin-top:8px">
+      <div class="sh-line"></div>
+      <h2>All <span>8 Agents</span></h2>
+      <p>Click any card to expand. Click "View in diagram" to highlight that node in the pipeline.</p>
+    </div>
+    <div class="agent-cards-grid" id="agent-cards"></div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════ PIPELINE ═══════════════════════ -->
+<div class="panel" id="panel-pipeline">
+  <div class="content-wrap">
+    <div class="sh">
+      <div class="sh-line"></div>
+      <h2>Pipeline <span>Phases</span></h2>
+      <p>8 stages run end-to-end. The only hard stop is the human approval gate — everything else is automatic.</p>
+    </div>
+    <div class="phase-accordion" id="phase-accordion"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ GET STARTED ═══════════════════════ -->
+<div class="panel" id="panel-getstarted">
+  <div class="content-wrap">
+    <div class="sh">
+      <div class="sh-line"></div>
+      <h2>Get <span>Started</span></h2>
+      <p>TPM OS is multi-program by design. One config file per program. Skills are program-agnostic.</p>
+    </div>
+
+    <div class="setup-steps">
+      <div class="setup-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-label">Setup</div></div>
+        <h3>Create a program directory</h3>
+        <p>Each program lives in its own folder under <span class="inline-code">programs/</span>. Copy the template to get started.</p>
+        <pre><code>mkdir -p programs/my-program
+cp templates/config.yaml programs/my-program/config.yaml
+cp templates/PROGRAM_STATE.yaml programs/my-program/PROGRAM_STATE.yaml</code></pre>
+      </div>
+      <div class="setup-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-label">Configure</div></div>
+        <h3>Configure your data sources</h3>
+        <p>Edit <span class="inline-code">config.yaml</span> with your Jira project, Slack channels, and stakeholder list.</p>
+        <pre><code>program_name: "My Program"
+jira_project: MYPROJ
+jira_initiative: MYPROJ-001
+slack_channels:
+  - "#my-program-eng"
+  - "#my-program-pm"
+slack_dms:
+  - alice@company.com
+  - bob@company.com
+stakeholders:
+  - name: Alice (PM)
+  - name: Bob (Eng Lead)</code></pre>
+      </div>
+      <div class="setup-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-label">Run</div></div>
+        <h3>Run the pipeline</h3>
+        <p>Tell Claude Code to run TPM OS. The pipeline gathers signals, proposes a delta, runs the Devil's Advocate, then stops for your approval.</p>
+        <pre><code># Full pipeline run
+run tpm-os program=my-program
+
+# Individual stages
+run tpm-os stage=signal-fetch program=my-program
+run tpm-os stage=synthesize program=my-program</code></pre>
+      </div>
+      <div class="setup-step">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-label">Approve</div></div>
+        <h3>Review and approve</h3>
+        <p>You see the proposed delta, DA challenges, contradictions, and confidence scores. Reply to commit or correct.</p>
+        <pre><code># Approve the proposed state
+approved
+
+# Or correct and loop back
+The M3 launch date should be Sep 30, not Oct 15.
+Loop back to Synthesizer with this correction.</code></pre>
+      </div>
+    </div>
+
+    <div class="sh" style="margin-top:8px">
+      <div class="sh-line"></div>
+      <h2>Directory <span>Structure</span></h2>
+    </div>
+    <div class="dir-tree">
+      <pre><code>TPM OS/
+├── SYSTEM_PROMPT.md              # Core agent identity and principles
+├── programs/
+│   ├── my-program/
+│   │   ├── config.yaml           # Jira project, Slack channels, stakeholders
+│   │   ├── PROGRAM_STATE.yaml    # Single source of truth — verified, sourced
+│   │   ├── signals.md            # Raw gathered signals (auto-generated)
+│   │   ├── proposed_delta.yaml   # Synthesizer output (pre-approval)
+│   │   ├── contradictions.md     # Conflict surface report
+│   │   ├── da_challenges.md      # Devil's Advocate findings
+│   │   └── OUTPUTS/
+│   │       └── 2026-06-11_newsletter.html
+│   └── other-program/
+│       └── ...
+└── SKILLS/
+    ├── 01_signal_fetcher.md
+    ├── 02_synthesizer.md
+    ├── 03_contradiction_detector.md
+    ├── 04_devils_advocate.md
+    ├── 05_verifier.md
+    ├── 06_renderer.md
+    ├── 07_publisher.md
+    └── ...</code></pre>
+    </div>
+
+    <div class="sh">
+      <div class="sh-line"></div>
+      <h2>Common <span>Commands</span></h2>
+    </div>
+    <div class="cmd-grid" style="margin-bottom:40px">
+      <div class="cmd-card">
+        <h4>Full pipeline run</h4>
+        <span class="cmd-code">run tpm-os program=&lt;name&gt;</span>
+        <p>Fetch → Synthesize → Detect → DA → Pause → Verify → Render → Publish</p>
+      </div>
+      <div class="cmd-card">
+        <h4>Generate newsletter</h4>
+        <span class="cmd-code">generate newsletter program=&lt;name&gt;</span>
+        <p>Reads verified PROGRAM_STATE and generates the weekly stakeholder newsletter.</p>
+      </div>
+      <div class="cmd-card">
+        <h4>Verification pass</h4>
+        <span class="cmd-code">run verify program=&lt;name&gt;</span>
+        <p>Pulls live Jira and Slack. Flags every field not verified in 7 days as STALE.</p>
+      </div>
+      <div class="cmd-card">
+        <h4>Exec brief</h4>
+        <span class="cmd-code">generate exec-brief program=&lt;name&gt;</span>
+        <p>One-page executive summary: status, risks, decisions needed, key dates.</p>
+      </div>
+      <div class="cmd-card">
+        <h4>Escalation memo</h4>
+        <span class="cmd-code">generate escalation program=&lt;name&gt;</span>
+        <p>Structured escalation memo with context, ask, and path to green.</p>
+      </div>
+      <div class="cmd-card">
+        <h4>Risk tracker</h4>
+        <span class="cmd-code">generate risk-tracker program=&lt;name&gt;</span>
+        <p>Risk table with owner, likelihood, impact, and mitigation path.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ SKILLS ═══════════════════════ -->
+<div class="panel" id="panel-skills">
+  <div class="content-wrap">
+    <div class="sh">
+      <div class="sh-line"></div>
+      <h2>Skills <span>Library</span></h2>
+      <p>26+ skills across three categories. Invoke by name. All are program-agnostic.</p>
+    </div>
+
+    <div class="skills-cats">
+      <div class="skill-cat">
+        <div class="skill-cat-header">
+          <div class="skill-cat-icon" style="background:#ecfeff;border:1.5px solid #0891b2">📡</div>
+          <h3>Ingestors</h3>
+        </div>
+        <div class="skill-cat-sub">Pull signals from external sources</div>
+        <div class="pills">
+          <span class="skill-pill pill-blue">jira-fetch</span>
+          <span class="skill-pill pill-blue">slack-fetch</span>
+          <span class="skill-pill pill-blue">gdoc-fetch</span>
+          <span class="skill-pill pill-blue">meeting-notes-fetch</span>
+          <span class="skill-pill pill-blue">dependency-fetch</span>
+          <span class="skill-pill pill-blue">ticket-status-fetch</span>
+          <span class="skill-pill pill-blue">milestone-fetch</span>
+          <span class="skill-pill pill-blue">epic-fetch</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <div class="skill-cat-header">
+          <div class="skill-cat-icon" style="background:#eef2ff;border:1.5px solid #4338ca">🧠</div>
+          <h3>Intelligence</h3>
+        </div>
+        <div class="skill-cat-sub">Synthesize, analyze, and challenge</div>
+        <div class="pills">
+          <span class="skill-pill pill-violet">synthesize-delta</span>
+          <span class="skill-pill pill-violet">detect-contradictions</span>
+          <span class="skill-pill pill-violet">score-confidence</span>
+          <span class="skill-pill pill-violet">identify-risks</span>
+          <span class="skill-pill pill-violet">flag-staleness</span>
+          <span class="skill-pill pill-violet">track-decisions</span>
+          <span class="skill-pill pill-violet">map-dependencies</span>
+          <span class="skill-pill pill-violet">verify-commitments</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <div class="skill-cat-header">
+          <div class="skill-cat-icon" style="background:#ecfdf5;border:1.5px solid #065f46">📄</div>
+          <h3>Renderers</h3>
+        </div>
+        <div class="skill-cat-sub">Generate outputs from verified state</div>
+        <div class="pills">
+          <span class="skill-pill pill-emerald">newsletter-generator</span>
+          <span class="skill-pill pill-emerald">exec-brief</span>
+          <span class="skill-pill pill-emerald">risk-tracker</span>
+          <span class="skill-pill pill-emerald">escalation-memo</span>
+          <span class="skill-pill pill-emerald">decision-log</span>
+          <span class="skill-pill pill-emerald">dependency-report</span>
+          <span class="skill-pill pill-emerald">timeline-builder</span>
+          <span class="skill-pill pill-emerald">stakeholder-update</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="skills-special">
+      <div class="special-card" style="background:linear-gradient(135deg,#fff1f2,#ffe4e6);border:1px solid #fecdd3;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:42px;height:42px;border-radius:12px;background:#fff1f2;border:2px solid #9f1239;display:flex;align-items:center;justify-content:center;font-size:22px;">😈</div>
+          <div><h3 style="font-size:17px;font-weight:900;color:#9f1239">Devil's Advocate</h3><div style="font-size:12px;color:#64748b">Stage 3 · Evidence-required challenge layer</div></div>
+        </div>
+        <p style="font-size:13px;color:#475569;line-height:1.7;margin-bottom:14px">Adversarially challenges every proposed state delta. Every challenge must cite a specific ticket ID, Slack timestamp, or date gap — vague concerns are automatically rejected.</p>
+        <p style="font-size:12px;font-weight:800;color:#9f1239;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">6 Challenge Categories</p>
+        <div class="da-cats">
+          <div class="da-cat-item">🕐 Staleness</div>
+          <div class="da-cat-item">⚡ Contradictions</div>
+          <div class="da-cat-item">👤 Ownership gaps</div>
+          <div class="da-cat-item">📋 Unverified commitments</div>
+          <div class="da-cat-item">📈 Optimism bias</div>
+          <div class="da-cat-item">🔕 Missing signal</div>
+        </div>
+        <div style="margin-top:16px;padding:10px 14px;background:rgba(255,255,255,.7);border-radius:10px;font-size:12.5px;color:#9f1239;border-left:3px solid #9f1239">
+          <strong>Outcome:</strong> APPROVED or REJECTED.<br>
+          REJECTED → Synthesizer re-runs with da_challenges.md. Loops until DA approves or you override.
+        </div>
+      </div>
+      <div class="special-card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #ddd6fe;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:42px;height:42px;border-radius:12px;background:#f5f3ff;border:2px solid #5b21b6;display:flex;align-items:center;justify-content:center;font-size:22px;">🔍</div>
+          <div><h3 style="font-size:17px;font-weight:900;color:#5b21b6">Verifier</h3><div style="font-size:12px;color:#64748b">Stage 4 · Live cross-check after approval</div></div>
+        </div>
+        <p style="font-size:13px;color:#475569;line-height:1.7;margin-bottom:14px">After your approval, pulls live state from Jira and Slack to confirm every committed field matches. Flags discrepancies and routes back to SignalFetcher with specific fields to re-check.</p>
+        <p style="font-size:12px;font-weight:800;color:#5b21b6;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">What it stamps on every field</p>
+        <pre style="background:#0f172a;border-radius:10px;padding:14px;font-size:11.5px;margin:0;border:1px solid #1e293b"><code>milestone_m3_launch:
+  value: "2026-09-30"
+  confidence: HIGH
+  sources:
+    - MYPROJ-142 (updated 2026-06-08)
+    - PM Slack DM 2026-06-09 10:42am
+  verified_at: 2026-06-11T09:15:00Z</code></pre>
+        <div style="margin-top:14px;font-size:12.5px;color:#5b21b6;background:rgba(255,255,255,.7);padding:10px 14px;border-radius:10px;border-left:3px solid #5b21b6">
+          Fields not verified in <strong>7 days</strong> are automatically flagged as <strong>STALE</strong> in the next pipeline run.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+var nodeOrder = ['sig','syn','cd','da','human','ver','ren','pub'];
+var currentNode = null;
+var autoPlayInterval = null;
+var autoPlayIdx = 0;
+
+var stageData = {
+  sig: { color:'#0891b2', bg:'#ecfeff', icon:'📡', name:'SignalFetcher', sub:'Stage 1 · Automatic',
+    rows:[
+      {who:'auto',text:'Pulls all Jira tickets and epics — status, assignee, last updated, linked tickets.'},
+      {who:'auto',text:'Fetches Slack DMs, channel threads, and meeting notes referenced in your program config.'},
+      {who:'auto',text:'Downloads linked Google Docs (PRDs, design docs, decision logs) in full — not snippets.'},
+      {who:'auto',text:'Writes signals.md with timestamped citations. Never synthesizes — just gathers.'},
+    ],
+    reads:['Jira project (all tickets + epics)','Slack channels/DMs','Google Docs (PRDs, ERDs, decision logs)','Meeting notes'],
+    writes:['signals.md'],
+  },
+  syn: { color:'#4338ca', bg:'#eef2ff', icon:'🧠', name:'Synthesizer', sub:'Stage 2 · Automatic',
+    rows:[
+      {who:'auto',text:'Reads signals.md and current PROGRAM_STATE to understand what changed.'},
+      {who:'auto',text:'Proposes a delta: which fields to change, which to keep, which need verification.'},
+      {who:'auto',text:'Scores confidence per field: HIGH (2+ sources), MEDIUM (1 source), LOW (inferred).'},
+      {who:'auto',text:'Writes proposed_delta.yaml — never touches PROGRAM_STATE directly until approval.'},
+    ],
+    reads:['signals.md','PROGRAM_STATE.yaml (current)'],
+    writes:['proposed_delta.yaml'],
+  },
+  cd: { color:'#be123c', bg:'#fff1f2', icon:'⚡', name:'Contradiction Detector', sub:'Stage 2.5 · Automatic',
+    rows:[
+      {who:'auto',text:'Reads signals.md and proposed_delta.yaml looking for conflicts between sources.'},
+      {who:'auto',text:'Every contradiction must cite: Source A says X (ticket/ts), Source B says Y (ticket/ts).'},
+      {who:'auto',text:'Writes contradictions.md — does not resolve, just surfaces.'},
+    ],
+    reads:['signals.md','proposed_delta.yaml'],
+    writes:['contradictions.md'],
+  },
+  da: { color:'#9f1239', bg:'#fff1f2', icon:'😈', name:"Devil's Advocate", sub:'Stage 3 · Evidence-required',
+    rows:[
+      {who:'auto',text:'Adversarially challenges the proposed delta across 6 categories. Every challenge must cite a specific ticket, Slack timestamp, or date gap.'},
+      {who:'auto',text:'Categories: Staleness, Contradictions, Ownership gaps, Unverified commitments, Optimism bias, Missing signal.'},
+      {who:'auto',text:'Emits APPROVED or REJECTED. Critical findings go to da_challenges.md.'},
+      {who:'loop',text:'Rejection → Synthesizer re-runs with da_challenges.md. Loops until DA approves or you override.'},
+    ],
+    reads:['proposed_delta.yaml','contradictions.md','signals.md'],
+    writes:['da_challenges.md'],
+  },
+  human: { color:'#16a34a', bg:'#f0fdf4', icon:'✅', name:'You Approve', sub:'Stage 3.5 · Your decision',
+    rows:[
+      {who:'you',text:'Presented with: proposed state delta, DA findings, contradictions, confidence scores. One screen, full context.'},
+      {who:'you',text:'Reply "approved" to commit the state update, or provide corrections that loop back to Synthesizer.'},
+      {who:'auto',text:'No iteration limit. Pipeline never auto-advances past this gate under any circumstances.'},
+    ],
+    reads:['proposed_delta.yaml','da_challenges.md','contradictions.md'],
+    writes:['(your approval commits PROGRAM_STATE)'],
+  },
+  ver: { color:'#5b21b6', bg:'#f5f3ff', icon:'🔍', name:'Verifier', sub:'Stage 4 · Cross-check',
+    rows:[
+      {who:'auto',text:'After approval, pulls live state from Jira and Slack to confirm the committed update actually matches.'},
+      {who:'auto',text:'Flags any discrepancy found after approval. Routes back to SignalFetcher with specific fields to re-check.'},
+      {who:'auto',text:'Stamps each field in PROGRAM_STATE with last-verified date.'},
+    ],
+    reads:['PROGRAM_STATE.yaml (committed)','Jira (live)','Slack (live)'],
+    writes:['PROGRAM_STATE.yaml (with verified_at timestamps)'],
+  },
+  ren: { color:'#065f46', bg:'#ecfdf5', icon:'📄', name:'Renderer', sub:'Stage 5 · Output generation',
+    rows:[
+      {who:'auto',text:'Reads verified PROGRAM_STATE and generates the requested output: newsletter, exec brief, risk tracker, or escalation memo.'},
+      {who:'auto',text:'Plain language — readable by non-TPMs. Every claim marked with its source in PROGRAM_STATE.'},
+    ],
+    reads:['PROGRAM_STATE.yaml (verified)'],
+    writes:['newsletter.html','exec_brief.md','escalation.md','risk_tracker.md'],
+  },
+  pub: { color:'#1d4ed8', bg:'#eff6ff', icon:'🚀', name:'Publisher', sub:'Stage 6 · Distribute',
+    rows:[
+      {who:'auto',text:'Publishes output to your configured storage and notifies stakeholder Slack channels.'},
+      {who:'auto',text:'Archives in programs/[name]/OUTPUTS/ with timestamp. Updates run history.'},
+    ],
+    reads:['Generated outputs (newsletter, brief, etc.)','config.yaml (channels, storage)'],
+    writes:['programs/[name]/OUTPUTS/YYYY-MM-DD_*','run_history.log'],
+  },
+};
+
+var agentCards = [
+  {key:'sig',color:'#0891b2',bg:'#ecfeff',icon:'📡',name:'SignalFetcher',stage:'Stage 1',desc:'Pulls Jira, Slack, and docs. Writes signals.md with timestamped citations. Never synthesizes — just gathers raw signals.'},
+  {key:'syn',color:'#4338ca',bg:'#eef2ff',icon:'🧠',name:'Synthesizer',stage:'Stage 2',desc:'Reads signals and current program state, proposes a delta, scores confidence (HIGH/MEDIUM/LOW) per field. Writes proposed_delta.yaml.'},
+  {key:'cd',color:'#be123c',bg:'#fff1f2',icon:'⚡',name:'Contradiction Detector',stage:'Stage 2.5',desc:'Finds conflicts between sources. Every contradiction cites both sources with ticket IDs or timestamps. Writes contradictions.md.'},
+  {key:'da',color:'#9f1239',bg:'#fff1f2',icon:'😈',name:"Devil's Advocate",stage:'Stage 3',desc:'Adversarially challenges proposed delta across 6 categories. All challenges must cite evidence. APPROVED or REJECTED — no soft findings.'},
+  {key:'human',color:'#16a34a',bg:'#f0fdf4',icon:'✅',name:'You Approve',stage:'Stage 3.5',desc:'The only hard stop. You see proposed delta, DA findings, contradictions, and confidence scores on one screen before anything commits.'},
+  {key:'ver',color:'#5b21b6',bg:'#f5f3ff',icon:'🔍',name:'Verifier',stage:'Stage 4',desc:'Cross-checks committed state against live Jira and Slack. Stamps every field with verified_at. Fields not verified in 7 days flagged as STALE.'},
+  {key:'ren',color:'#065f46',bg:'#ecfdf5',icon:'📄',name:'Renderer',stage:'Stage 5',desc:'Generates newsletter, exec brief, risk tracker, or escalation memo from verified state. Plain language, every claim sourced.'},
+  {key:'pub',color:'#1d4ed8',bg:'#eff6ff',icon:'🚀',name:'Publisher',stage:'Stage 6',desc:'Publishes to configured storage and notifies stakeholder Slack channels. Archives output with timestamp.'},
+];
+
+var phases = [
+  {key:'sig',num:1,color:'#0891b2',name:'SignalFetcher',sub:'Automatic — pulls all external signals',desc:'Connects to Jira, Slack, and Google Docs using your program config. Pulls every ticket, DM thread, and document relevant to the program. Writes signals.md with timestamped citations. This stage never synthesizes or interprets — it only gathers.',reads:['Jira project (all tickets + epics)','Slack channels + DMs (per config)','Google Docs (PRDs, ERDs, decision logs)','Meeting notes'],writes:['signals.md']},
+  {key:'syn',num:2,color:'#4338ca',name:'Synthesizer',sub:'Automatic — proposes state delta',desc:'Reads signals.md and the current PROGRAM_STATE to understand what changed since the last run. Proposes a delta: which fields to update, which to keep, and which need human verification. Scores confidence (HIGH, MEDIUM, LOW) for each proposed field. Writes proposed_delta.yaml — never touches PROGRAM_STATE directly.',reads:['signals.md','PROGRAM_STATE.yaml (current)'],writes:['proposed_delta.yaml']},
+  {key:'cd',num:3,color:'#be123c',name:'Contradiction Detector',sub:'Automatic — surfaces conflicts',desc:'Reads both signals.md and proposed_delta.yaml. Finds anywhere two sources disagree: "Source A says launch is Sep 30 (MYPROJ-142). Source B says Oct 15 (PM Slack DM)." Does not resolve contradictions — surfaces them for DA review and human judgment.',reads:['signals.md','proposed_delta.yaml'],writes:['contradictions.md']},
+  {key:'da',num:4,color:'#9f1239',name:"Devil's Advocate",sub:'Automatic — adversarial evidence-based challenge',desc:"Adversarially challenges the proposed delta across 6 categories: Staleness, Contradictions, Ownership gaps, Unverified commitments, Optimism bias, Missing signal. Every challenge must cite a specific ticket ID, Slack timestamp, or date gap — vague concerns are rejected. Emits APPROVED or REJECTED. A rejection loops back to Synthesizer with da_challenges.md.",reads:['proposed_delta.yaml','contradictions.md','signals.md'],writes:['da_challenges.md']},
+  {key:'human',num:5,color:'#16a34a',name:'You Approve',sub:'Your decision — no auto-advance past this gate',desc:'You are presented with the full picture: proposed state delta with confidence scores, DA findings, contradictions. Reply "approved" to commit. Or provide corrections and the Synthesizer re-runs. There is no iteration limit. The pipeline never auto-advances past this gate.',reads:['proposed_delta.yaml','da_challenges.md','contradictions.md'],writes:['(your approval commits PROGRAM_STATE.yaml)']},
+  {key:'ver',num:6,color:'#5b21b6',name:'Verifier',sub:'Automatic — live cross-check after approval',desc:'After approval, pulls live state from Jira and Slack to confirm the committed values actually match. Flags any discrepancy and routes back to SignalFetcher with specific fields to re-check. Stamps every field in PROGRAM_STATE with a verified_at timestamp. Fields not verified in 7 days are flagged as STALE.',reads:['PROGRAM_STATE.yaml (committed)','Jira (live)','Slack (live)'],writes:['PROGRAM_STATE.yaml (with verified_at timestamps)']},
+  {key:'ren',num:7,color:'#065f46',name:'Renderer',sub:'Automatic — generate stakeholder outputs',desc:'Reads the verified PROGRAM_STATE and generates the requested output format. All outputs use plain language readable by non-TPMs. Every factual claim is marked with its source field in PROGRAM_STATE so readers can trace the assertion back to its original signal.',reads:['PROGRAM_STATE.yaml (verified)'],writes:['newsletter.html','exec_brief.md','escalation.md','risk_tracker.md']},
+  {key:'pub',num:8,color:'#1d4ed8',name:'Publisher',sub:'Automatic — distribute and archive',desc:'Publishes generated outputs to your configured storage and sends notifications to the stakeholder Slack channels defined in config.yaml. Archives every output under programs/[name]/OUTPUTS/ with a timestamp. Updates the run history log.',reads:['Generated outputs (newsletter, brief, etc.)','config.yaml (channels, storage)'],writes:['programs/[name]/OUTPUTS/YYYY-MM-DD_*','run_history.log']},
+];
+
+// ── RENDER AGENT CARDS ──────────────────────────────────────
+var cardsEl = document.getElementById('agent-cards');
+agentCards.forEach(function(a) {
+  var div = document.createElement('div');
+  div.className = 'agent-card';
+  div.id = 'ac-' + a.key;
+  div.style.setProperty('--ac-color', a.color);
+  div.innerHTML =
+    '<div class="ac-header">' +
+      '<div class="ac-icon" style="background:' + a.bg + ';border-color:' + a.color + '">' + a.icon + '</div>' +
+      '<div><h3>' + a.name + '</h3><div class="ac-sub">' + a.stage + '</div></div>' +
+    '</div>' +
+    '<div class="ac-body">' + a.desc + '</div>' +
+    '<div class="ac-footer">' +
+      '<a class="ac-link" href="#" style="color:' + a.color + '" onclick="selectNode(\'' + a.key + '\');showPanel(\'overview\',document.querySelectorAll(\'.nav-tab\')[0]);return false;">View in pipeline diagram →</a>' +
+    '</div>';
+  div.onclick = function() { this.classList.toggle('expanded'); };
+  cardsEl.appendChild(div);
+});
+
+// ── RENDER ACCORDION ──────────────────────────────────────
+var accEl = document.getElementById('phase-accordion');
+phases.forEach(function(p) {
+  var div = document.createElement('div');
+  div.className = 'phase-item';
+  div.style.setProperty('--pi-color', p.color);
+  var rh = p.reads.map(function(r){return '<li>' + r + '</li>';}).join('');
+  var wh = p.writes.map(function(w){return '<li>' + w + '</li>';}).join('');
+  div.innerHTML =
+    '<div class="phase-header" onclick="togglePhase(this)">' +
+      '<div class="phase-num" style="background:' + p.color + '">' + p.num + '</div>' +
+      '<h3>' + p.name + '</h3>' +
+      '<span class="phase-sub">' + p.sub + '</span>' +
+      '<div class="phase-chevron">▼</div>' +
+    '</div>' +
+    '<div class="phase-body"><div class="phase-body-inner">' +
+      '<p>' + p.desc + '</p>' +
+      '<div class="phase-io">' +
+        '<div><h4>Reads</h4><ul>' + rh + '</ul></div>' +
+        '<div><h4>Writes</h4><ul>' + wh + '</ul></div>' +
+      '</div>' +
+    '</div></div>';
+  accEl.appendChild(div);
+});
+
+// ── PANEL NAV ──────────────────────────────────────────────
+function showPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.getElementById('panel-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ── ACCORDION ──────────────────────────────────────────────
+function togglePhase(header) {
+  header.parentElement.classList.toggle('open');
+}
+
+// ── SELECT NODE ──────────────────────────────────────────────
+function selectNode(key) {
+  // deactivate all rings
+  document.querySelectorAll('.node-ring').forEach(function(r) { r.style.display = 'none'; });
+  document.querySelectorAll('.orbital-node').forEach(function(n) { n.classList.remove('active'); });
+
+  var nodeEl = document.getElementById('node-' + key);
+  if (nodeEl) {
+    nodeEl.classList.add('active');
+    var ring = document.getElementById('ring-' + key);
+    if (ring) ring.style.display = '';
+  }
+  currentNode = key;
+  renderDetail(key);
+}
+
+function renderDetail(key) {
+  var d = stageData[key];
+  var panel = document.getElementById('detail-panel');
+  var rowsHtml = d.rows.map(function(r) {
+    var cls = r.who==='you' ? 'who-you' : r.who==='loop' ? 'who-loop' : 'who-auto';
+    return '<div class="detail-row"><span class="who ' + cls + '">' + r.who + '</span><span>' + r.text + '</span></div>';
+  }).join('');
+  var rh = d.reads.map(function(r){return '<li>' + r + '</li>';}).join('');
+  var wh = d.writes.map(function(w){return '<li>' + w + '</li>';}).join('');
+  panel.innerHTML = '<div class="detail-inner">' +
+    '<div class="detail-header">' +
+      '<div class="d-icon" style="background:' + d.bg + ';border-color:' + d.color + '">' + d.icon + '</div>' +
+      '<div><h3 style="color:' + d.color + '">' + d.name + '</h3><div class="d-sub">' + d.sub + '</div></div>' +
+    '</div>' +
+    rowsHtml +
+    '<div class="detail-io">' +
+      '<div><h4>Reads</h4><ul>' + rh + '</ul></div>' +
+      '<div><h4>Writes</h4><ul>' + wh + '</ul></div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── AUTO PLAY ──────────────────────────────────────────────
+function toggleAutoPlay() {
+  var btn = document.getElementById('btn-autoplay');
+  if (autoPlayInterval) {
+    clearInterval(autoPlayInterval);
+    autoPlayInterval = null;
+    btn.textContent = '▶ Auto-Play';
+    btn.classList.remove('on');
+  } else {
+    btn.textContent = '⏹ Stop';
+    btn.classList.add('on');
+    selectNode(nodeOrder[autoPlayIdx]);
+    autoPlayInterval = setInterval(function() {
+      autoPlayIdx = (autoPlayIdx + 1) % nodeOrder.length;
+      selectNode(nodeOrder[autoPlayIdx]);
+    }, 2200);
+  }
+}
+
+function stepNext() {
+  autoPlayIdx = (currentNode ? (nodeOrder.indexOf(currentNode) + 1) : 0) % nodeOrder.length;
+  selectNode(nodeOrder[autoPlayIdx]);
+}
+
+// auto-select first node on load
+selectNode('sig');
+</script>
+</body>
+</html>

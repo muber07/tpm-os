@@ -1,0 +1,12 @@
+# Sensitive program data — never commit
+PROGRAM_STATE.yaml
+PROGRAMS.yaml
+NEWSLETTERS/
+OUTPUTS/
+MONDAY_SNAPSHOTS/
+log/
+
+# System
+.DS_Store
+.claude/
+*.bak

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPM OS — Skills Interaction Diagram</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #060a10;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            flex-shrink: 0;
+            background: #0d1117;
+            padding: 8px 24px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+        .header p { font-size: 0.76em; color: #6b7280; }
+
+        /* ── LEGEND ── */
+        .legend {
+            flex-shrink: 0;
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 6px 18px;
+            padding: 9px 24px;
+            background: #0d1117;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            align-items: center;
+            overflow-x: auto;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75em;
+            color: #9ca3af;
+            white-space: nowrap;
+        }
+        .legend-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .legend-dash {
+            width: 24px; height: 2px;
+            flex-shrink: 0;
+        }
+        .legend-sep { color: #374151; font-size: 0.9em; }
+
+        /* ── DIAGRAM ── */
+        .diagram-container {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            background: #0d1117;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+            background-size: 44px 44px;
+            overflow: hidden;
+            cursor: grab;
+        }
+        .diagram-container.dragging { cursor: grabbing; }
+
+        /* ── PAN LAYER — everything draggable lives here ── */
+        #panLayer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            will-change: transform;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        svg.connections {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* ── NODES ── */
+        .skill-node {
+            position: absolute;
+            padding: 9px 12px;
+            border-radius: 8px;
+            min-width: 132px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            z-index: 10;
+            opacity: 0;
+            animation: nodeIn 0.45s ease forwards;
+        }
+
+        @keyframes nodeIn {
+            from { opacity: 0; transform: scale(0.8) translateY(6px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .skill-node:hover { transform: scale(1.09); z-index: 100; }
+        .skill-node.dimmed { opacity: 0.15; }
+        .skill-node.active { z-index: 101; }
+
+        .ingestor-skill {
+            background: linear-gradient(135deg, #0f2944, #0c2038);
+            border: 1.5px solid #38bdf8;
+            box-shadow: 0 0 12px rgba(56,189,248,0.18), 0 3px 8px rgba(0,0,0,0.5);
+            color: #bae6fd;
+        }
+        .ingestor-skill:hover, .ingestor-skill.active {
+            box-shadow: 0 0 26px rgba(56,189,248,0.55), 0 4px 14px rgba(0,0,0,0.5);
+        }
+
+        .intelligence-skill {
+            background: linear-gradient(135deg, #1a0e38, #150b30);
+            border: 1.5px solid #a78bfa;
+            box-shadow: 0 0 12px rgba(167,139,250,0.18), 0 3px 8px rgba(0,0,0,0.5);
+            color: #ddd6fe;
+        }
+        .intelligence-skill:hover, .intelligence-skill.active {
+            box-shadow: 0 0 26px rgba(167,139,250,0.55), 0 4px 14px rgba(0,0,0,0.5);
+        }
+
+        .renderer-skill {
+            background: linear-gradient(135deg, #04281a, #032015);
+            border: 1.5px solid #34d399;
+            box-shadow: 0 0 12px rgba(52,211,153,0.18), 0 3px 8px rgba(0,0,0,0.5);
+            color: #a7f3d0;
+        }
+        .renderer-skill:hover, .renderer-skill.active {
+            box-shadow: 0 0 26px rgba(52,211,153,0.55), 0 4px 14px rgba(0,0,0,0.5);
+        }
+
+        .central-artifact {
+            background: linear-gradient(135deg, #271600, #1c1000);
+            border: 2px solid #fbbf24;
+            box-shadow: 0 0 20px rgba(251,191,36,0.32), 0 5px 16px rgba(0,0,0,0.6);
+            color: #fde68a;
+            padding: 12px 14px;
+            min-width: 170px;
+        }
+        .central-artifact:hover {
+            box-shadow: 0 0 38px rgba(251,191,36,0.6), 0 5px 20px rgba(0,0,0,0.6);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 100%; height: 100%;
+            transform: translate(-50%, -50%);
+            border-radius: 10px;
+            border: 1.5px solid rgba(251,191,36,0.45);
+            animation: pulseRing 2.6s ease-out infinite;
+            pointer-events: none;
+        }
+        .pulse-ring:nth-child(2) { animation-delay: 0.87s; }
+        .pulse-ring:nth-child(3) { animation-delay: 1.73s; }
+
+        @keyframes pulseRing {
+            0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.65; }
+            100% { transform: translate(-50%,-50%) scale(2.1); opacity: 0; }
+        }
+
+        .skill-name { font-weight: 700; font-size: 0.84em; margin-bottom: 3px; position: relative; z-index: 1; }
+        .skill-num  { font-size: 0.64em; opacity: 0.5; margin-bottom: 3px; font-weight: 600; letter-spacing: 0.07em; position: relative; z-index: 1; }
+        .skill-desc { font-size: 0.7em; opacity: 0.65; line-height: 1.35; position: relative; z-index: 1; }
+
+        /* ── INFO PANEL ── */
+        .info-panel {
+            position: fixed;
+            bottom: 18px; right: 18px;
+            background: #111827;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 18px;
+            border-radius: 10px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+            max-width: 320px;
+            display: none;
+            z-index: 1000;
+            transform: translateY(8px);
+            opacity: 0;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        .info-panel.visible { display: block; transform: translateY(0); opacity: 1; }
+        .info-panel h3 { font-size: 0.95em; color: #f9fafb; margin-bottom: 5px; }
+        .info-tag {
+            display: inline-block;
+            font-size: 0.67em; font-weight: 700;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            padding: 2px 7px; border-radius: 3px; margin-bottom: 8px;
+        }
+        .tag-ingestor     { background: rgba(56,189,248,0.15);  color: #38bdf8; }
+        .tag-intelligence { background: rgba(167,139,250,0.15); color: #a78bfa; }
+        .tag-renderer     { background: rgba(52,211,153,0.15);  color: #34d399; }
+        .tag-central      { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+        .info-panel p { font-size: 0.8em; line-height: 1.58; color: #9ca3af; margin-bottom: 5px; }
+        .info-conn { margin-top: 8px; font-size: 0.75em; color: #6b7280; }
+        .info-conn p { color: #6b7280; margin-bottom: 2px; }
+        .info-conn strong { color: #9ca3af; }
+        .close-btn {
+            position: absolute; top: 10px; right: 12px;
+            background: none; border: none;
+            font-size: 1.2em; cursor: pointer; color: #4b5563; line-height: 1;
+        }
+        .close-btn:hover { color: #d1d5db; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <p>26 skills · one PROGRAM_STATE per project · click any node to trace connections · drag to pan</p>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#38bdf8; box-shadow:0 0 5px #38bdf8;"></div>
+            Ingestors (01–10)
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#a78bfa; box-shadow:0 0 5px #a78bfa;"></div>
+            Intelligence Engines (11–20)
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#34d399; box-shadow:0 0 5px #34d399;"></div>
+            Output Renderers (21–26)
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#fbbf24; box-shadow:0 0 5px #fbbf24;"></div>
+            PROGRAM_STATE.yaml
+        </div>
+        <span class="legend-sep">|</span>
+        <div class="legend-item">
+            <div class="legend-dash" style="background:#38bdf8;"></div>
+            creates
+        </div>
+        <div class="legend-item">
+            <div class="legend-dash" style="background:#a78bfa;"></div>
+            uses
+        </div>
+        <div class="legend-item">
+            <div class="legend-dash" style="background: repeating-linear-gradient(90deg,#f87171 0 5px,transparent 5px 9px);"></div>
+            calls
+        </div>
+    </div>
+
+    <div class="diagram-container" id="diagramContainer">
+        <div id="panLayer">
+            <canvas id="particleCanvas"></canvas>
+            <svg class="connections" id="svgConnections"></svg>
+
+            <!-- ═══ CENTRAL ═══ -->
+            <div class="skill-node central-artifact"
+                 style="left:calc(40% - 85px); top:calc(40% - 44px); animation-delay:0.05s;"
+                 data-skill="program-state" data-type="central" data-label="Central Artifact"
+                 data-desc="Think of this as the shared notebook for your entire project. Every skill reads from it and writes to it. It remembers what's blocked, what's been decided, what's risky, and who's responsible — so nothing falls through the cracks. One notebook per project."
+                 data-creates="" data-uses="" data-calls="">
+                <div class="pulse-ring"></div>
+                <div class="pulse-ring"></div>
+                <div class="pulse-ring"></div>
+                <div class="skill-name">PROGRAM_STATE.yaml</div>
+                <div class="skill-desc">One per program/project</div>
+            </div>
+
+            <!-- ═══ INGESTORS (top) ═══ -->
+            <div class="skill-node ingestor-skill"
+                 style="left:2%; top:4%; animation-delay:0.05s;"
+                 data-skill="comms-ingestors" data-type="ingestor" data-label="Ingestors 01–03"
+                 data-desc="Reads your Slack messages and emails every day — like an assistant who skims all your inboxes and flags anything that matters for the project, so you don't have to."
+                 data-creates="program-state" data-uses="" data-calls="">
+                <div class="skill-num">01 · 02 · 03</div>
+                <div class="skill-name">Comms Ingestors</div>
+                <div class="skill-desc">Slack · Gmail · Archive</div>
+            </div>
+
+            <div class="skill-node ingestor-skill"
+                 style="left:24%; top:2%; animation-delay:0.1s;"
+                 data-skill="project-ingestors" data-type="ingestor" data-label="Ingestors 04–06"
+                 data-desc="Checks your task trackers (like Jira) to see what's done, what's stuck, and what's overdue. Like glancing at the team's to-do board without having to open every ticket yourself."
+                 data-creates="program-state" data-uses="" data-calls="">
+                <div class="skill-num">04 · 05 · 06</div>
+                <div class="skill-name">Project Ingestors</div>
+                <div class="skill-desc">Jira · Linear · Monday</div>
+            </div>
+
+            <div class="skill-node ingestor-skill"
+                 style="left:53%; top:2%; animation-delay:0.15s;"
+                 data-skill="docs-ingestors" data-type="ingestor" data-label="Ingestors 07–08 · 10"
+                 data-desc="Reads your documents and Zoom call transcripts so nothing said in a meeting gets lost. Like a note-taker who reads every doc and attends every call on your behalf."
+                 data-creates="program-state" data-uses="" data-calls="">
+                <div class="skill-num">07 · 08 · 10</div>
+                <div class="skill-name">Docs & Meetings</div>
+                <div class="skill-desc">Docs · Zoom · UPlan</div>
+            </div>
+
+            <div class="skill-node ingestor-skill"
+                 style="left:77%; top:4%; animation-delay:0.2s;"
+                 data-skill="github-ingestor" data-type="ingestor" data-label="Ingestor 09"
+                 data-desc="Watches what engineers are actually shipping. Like checking whether the crew is on site and building — not just what they said they'd do in the last meeting."
+                 data-creates="program-state" data-uses="" data-calls="">
+                <div class="skill-num">09</div>
+                <div class="skill-name">GitHub Ingestor</div>
+                <div class="skill-desc">PRs · code signals</div>
+            </div>
+
+            <!-- ═══ INTELLIGENCE — LEFT ═══ -->
+            <div class="skill-node intelligence-skill"
+                 style="left:1%; top:27%; animation-delay:0.22s;"
+                 data-skill="context-fusion" data-type="intelligence" data-label="Skill 11"
+                 data-desc="Takes signals from every source and stitches them into one clear picture. Like a researcher who reads 50 reports and hands you a single one-pager with only what matters."
+                 data-creates="" data-uses="program-state" data-calls="comms-ingestors,project-ingestors,docs-ingestors,github-ingestor">
+                <div class="skill-num">11</div>
+                <div class="skill-name">Context Fusion</div>
+                <div class="skill-desc">One picture from all sources</div>
+            </div>
+
+            <div class="skill-node intelligence-skill"
+                 style="left:1%; top:46%; animation-delay:0.27s;"
+                 data-skill="contradiction-detector" data-type="intelligence" data-label="Skill 12"
+                 data-desc="Spots when two sources say opposite things — like noticing Jira says 'Done' while Slack shows the team is still stuck. Flags it immediately so you're not making decisions on false info."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">12</div>
+                <div class="skill-name">Contradiction Detector</div>
+                <div class="skill-desc">Catches conflicting signals</div>
+            </div>
+
+            <div class="skill-node intelligence-skill"
+                 style="left:1%; top:65%; animation-delay:0.32s;"
+                 data-skill="decision-memory" data-type="intelligence" data-label="Skill 15"
+                 data-desc="Remembers every important decision that's been made and why, so the same argument doesn't have to happen again in every meeting. Like a running log of what was agreed and who decided it."
+                 data-creates="program-state" data-uses="program-state" data-calls="">
+                <div class="skill-num">15</div>
+                <div class="skill-name">Decision Memory</div>
+                <div class="skill-desc">Recalls what was decided & why</div>
+            </div>
+
+            <!-- ═══ INTELLIGENCE — RIGHT ═══ -->
+            <div class="skill-node intelligence-skill"
+                 style="left:79%; top:22%; animation-delay:0.22s;"
+                 data-skill="execution-verifier" data-type="intelligence" data-label="Skill 16"
+                 data-desc="Goes and actually checks whether things are getting done — not just what people promised. Like a manager who visits the factory floor instead of just reading status reports."
+                 data-creates="program-state" data-uses="program-state" data-calls="project-ingestors,comms-ingestors">
+                <div class="skill-num">16</div>
+                <div class="skill-name">Execution Verifier</div>
+                <div class="skill-desc">Checks if things are really done</div>
+            </div>
+
+            <div class="skill-node intelligence-skill"
+                 style="left:79%; top:41%; animation-delay:0.27s;"
+                 data-skill="risk-registry" data-type="intelligence" data-label="Skill 17"
+                 data-desc="Keeps a running list of everything that could go wrong — and tracks whether each risk is getting better or worse. Like a weather forecast for your project."
+                 data-creates="program-state" data-uses="program-state" data-calls="">
+                <div class="skill-num">17</div>
+                <div class="skill-name">Risk Registry</div>
+                <div class="skill-desc">Tracks what could go wrong</div>
+            </div>
+
+            <div class="skill-node intelligence-skill"
+                 style="left:79%; top:60%; animation-delay:0.32s;"
+                 data-skill="delta-analyzer" data-type="intelligence" data-label="Skill 18"
+                 data-desc="Compares this week to last week and only tells you what changed. No rehashing the same status — just what's new, what got fixed, and what got worse."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">18</div>
+                <div class="skill-name">Delta Analyzer</div>
+                <div class="skill-desc">Only shows what changed</div>
+            </div>
+
+            <!-- ═══ INTELLIGENCE — BOTTOM CENTER ═══ -->
+            <div class="skill-node intelligence-skill"
+                 style="left:13%; top:74%; animation-delay:0.37s;"
+                 data-skill="source-reliability" data-type="intelligence" data-label="Skill 14"
+                 data-desc="Figures out which sources to trust more. A Slack message from yesterday beats a Jira ticket nobody touched in three weeks — this skill knows the difference."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">14</div>
+                <div class="skill-name">Source Reliability</div>
+                <div class="skill-desc">Decides which source to trust</div>
+            </div>
+
+            <div class="skill-node intelligence-skill"
+                 style="left:37%; top:76%; animation-delay:0.39s;"
+                 data-skill="dependency-mapper" data-type="intelligence" data-label="Skill 19"
+                 data-desc="Tracks everything your team is waiting on from other teams — and whether those other teams have actually committed. Like keeping score of every favor you're owed."
+                 data-creates="" data-uses="program-state" data-calls="project-ingestors">
+                <div class="skill-num">19</div>
+                <div class="skill-name">Dependency Mapper</div>
+                <div class="skill-desc">Tracks cross-team promises</div>
+            </div>
+
+            <div class="skill-node intelligence-skill"
+                 style="left:61%; top:74%; animation-delay:0.41s;"
+                 data-skill="complexity-estimator" data-type="intelligence" data-label="Skill 20"
+                 data-desc="Scores how messy and risky the project looks right now. Helps decide how deep to go on the next check-in — rough water needs more careful navigation."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">20</div>
+                <div class="skill-name">Complexity Estimator</div>
+                <div class="skill-desc">How risky is the project right now</div>
+            </div>
+
+            <!-- ═══ OUTPUT RENDERERS (bottom strip) ═══ -->
+            <div class="skill-node renderer-skill"
+                 style="left:1%; top:87%; animation-delay:0.48s;"
+                 data-skill="narrative-compressor" data-type="renderer" data-label="Skill 21"
+                 data-desc="Turns the full messy project picture into tight, clear sentences. Cuts the fluff and keeps only what actually matters — so busy people get the point fast."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">21</div>
+                <div class="skill-name">Narrative Compressor</div>
+                <div class="skill-desc">Cuts noise, keeps signal</div>
+            </div>
+
+            <div class="skill-node renderer-skill"
+                 style="left:18%; top:89%; animation-delay:0.5s;"
+                 data-skill="slide-storyliner" data-type="renderer" data-label="Skill 22"
+                 data-desc="Figures out the best order and structure for a presentation. What to lead with, what to mention briefly, what story to tell — so your deck has a clear flow instead of just a pile of slides."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">22</div>
+                <div class="skill-name">Slide Storyliner</div>
+                <div class="skill-desc">Builds the deck narrative</div>
+            </div>
+
+            <div class="skill-node renderer-skill"
+                 style="left:35%; top:87%; animation-delay:0.52s;"
+                 data-skill="exec-renderer" data-type="renderer" data-label="Skill 23"
+                 data-desc="Formats everything into a clean, polished report for senior leaders. No jargon, clear red/yellow/green status, easy to scan in under a minute."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">23</div>
+                <div class="skill-name">Exec Renderer</div>
+                <div class="skill-desc">Clean report for senior leaders</div>
+            </div>
+
+            <div class="skill-node renderer-skill"
+                 style="left:53%; top:89%; animation-delay:0.54s;"
+                 data-skill="status-board" data-type="renderer" data-label="Skill 24"
+                 data-desc="Builds a visual scoreboard showing how the whole project is doing — milestones, blockers, and risks all in one view. Like a control room dashboard."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">24</div>
+                <div class="skill-name">Status Board</div>
+                <div class="skill-desc">Project health at a glance</div>
+            </div>
+
+            <div class="skill-node renderer-skill"
+                 style="left:69%; top:87%; animation-delay:0.56s;"
+                 data-skill="weekly-highlights" data-type="renderer" data-label="Skill 25"
+                 data-desc="Pulls out the most important things that happened this week — sourced only from real conversations, never from stale task systems. What people actually said, not what tickets claim."
+                 data-creates="" data-uses="program-state" data-calls="">
+                <div class="skill-num">25</div>
+                <div class="skill-name">Weekly Highlights</div>
+                <div class="skill-desc">What actually happened this week</div>
+            </div>
+
+            <div class="skill-node renderer-skill"
+                 style="left:83%; top:85%; animation-delay:0.58s;"
+                 data-skill="newsletter-generator" data-type="renderer" data-label="Skill 26"
+                 data-desc="Writes the full weekly update email for all stakeholders — everything in one place, in a logical order. Always marked DRAFT until you review and approve it."
+                 data-creates="" data-uses="program-state" data-calls="narrative-compressor,exec-renderer">
+                <div class="skill-num">26</div>
+                <div class="skill-name">Newsletter Generator</div>
+                <div class="skill-desc">Weekly stakeholder update email</div>
+            </div>
+
+        </div><!-- /panLayer -->
+    </div>
+</div>
+
+<!-- INFO PANEL -->
+<div class="info-panel" id="infoPanel">
+    <button class="close-btn" onclick="closeInfo()">×</button>
+    <div id="infoTag" class="info-tag"></div>
+    <h3 id="infoTitle"></h3>
+    <p id="infoDesc"></p>
+    <div class="info-conn" id="infoConn"></div>
+</div>
+
+<script>
+'use strict';
+
+const svgEl     = document.getElementById('svgConnections');
+const canvas    = document.getElementById('particleCanvas');
+const ctx       = canvas.getContext('2d');
+const container = document.getElementById('diagramContainer');
+const panLayer  = document.getElementById('panLayer');
+const nodes     = document.querySelectorAll('.skill-node');
+const infoPanel = document.getElementById('infoPanel');
+
+let drawnPaths = [];
+let particles  = [];
+let animId;
+
+// ── Pan state ──────────────────────────────────────────────────
+let panX = 0, panY = 0;
+let isDragging = false;
+let dragStart  = { x: 0, y: 0 };
+let didDrag    = false;
+
+container.addEventListener('mousedown', e => {
+    if (e.target.closest('.skill-node')) return;
+    isDragging = true;
+    didDrag    = false;
+    dragStart  = { x: e.clientX - panX, y: e.clientY - panY };
+    container.classList.add('dragging');
+    e.preventDefault();
+});
+
+window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    panX = e.clientX - dragStart.x;
+    panY = e.clientY - dragStart.y;
+    panLayer.style.transform = `translate(${panX}px, ${panY}px)`;
+    // Rebuild SVG paths/particles to stay aligned with panned nodes
+    buildConnections();
+    didDrag = true;
+});
+
+window.addEventListener('mouseup', () => {
+    isDragging = false;
+    container.classList.remove('dragging');
+});
+
+// Double-click to reset pan
+container.addEventListener('dblclick', e => {
+    if (e.target.closest('.skill-node')) return;
+    panX = 0; panY = 0;
+    panLayer.style.transform = 'translate(0px, 0px)';
+    buildConnections();
+});
+
+// ── Canvas sizing ──────────────────────────────────────────────
+function resizeCanvas() {
+    canvas.width  = panLayer.offsetWidth;
+    canvas.height = panLayer.offsetHeight;
+}
+
+// nodeCenter is relative to panLayer so canvas drawing aligns correctly
+function nodeCenter(node) {
+    const pRect = panLayer.getBoundingClientRect();
+    const nRect = node.getBoundingClientRect();
+    return {
+        x: nRect.left - pRect.left + nRect.width  / 2,
+        y: nRect.top  - pRect.top  + nRect.height / 2,
+    };
+}
+
+// ── Build SVG connections + particles ─────────────────────────
+function buildConnections() {
+    svgEl.innerHTML = '';
+    drawnPaths = [];
+    particles  = [];
+    cancelAnimationFrame(animId);
+
+    const nodeMap = {};
+    nodes.forEach(n => { nodeMap[n.dataset.skill] = n; });
+
+    function addConn(fromNode, toNode, color, dashed) {
+        const c1 = nodeCenter(fromNode);
+        const c2 = nodeCenter(toNode);
+        const dx = c2.x - c1.x, dy = c2.y - c1.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const bend = Math.min(dist * 0.22, 55);
+        const mx = (c1.x + c2.x) / 2;
+        const my = (c1.y + c2.y) / 2;
+        const cpx = mx + bend * dy / dist;
+        const cpy = my - bend * dx / dist;
+
+        const d = `M ${c1.x} ${c1.y} Q ${cpx} ${cpy} ${c2.x} ${c2.y}`;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', color);
+        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('opacity', '0.3');
+        if (dashed) path.setAttribute('stroke-dasharray', '6 5');
+        path.dataset.from = fromNode.dataset.skill;
+        path.dataset.to   = toNode.dataset.skill;
+        path.classList.add('svg-path');
+        svgEl.appendChild(path);
+
+        const tl  = path.getTotalLength();
+        const p0  = path.getPointAtLength(tl);
+        const pp  = path.getPointAtLength(Math.max(0, tl - 10));
+        const ang = Math.atan2(p0.y - pp.y, p0.x - pp.x);
+        const as  = 7;
+        const pts = [
+            [p0.x, p0.y],
+            [p0.x - as*Math.cos(ang-Math.PI/7), p0.y - as*Math.sin(ang-Math.PI/7)],
+            [p0.x - as*Math.cos(ang+Math.PI/7), p0.y - as*Math.sin(ang+Math.PI/7)],
+        ].map(p => p.join(',')).join(' ');
+        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        arrow.setAttribute('points', pts);
+        arrow.setAttribute('fill', color);
+        arrow.setAttribute('opacity', '0.35');
+        arrow.dataset.from = fromNode.dataset.skill;
+        arrow.dataset.to   = toNode.dataset.skill;
+        arrow.classList.add('svg-arrow');
+        svgEl.appendChild(arrow);
+
+        drawnPaths.push({ path, color, dashed, fromSkill: fromNode.dataset.skill, toSkill: toNode.dataset.skill, highlighted: false });
+    }
+
+    nodes.forEach(node => {
+        const resolve = (ids, color, dashed) => {
+            if (!ids) return;
+            ids.split(',').forEach(id => {
+                const t = nodeMap[id.trim()];
+                if (t) addConn(node, t, color, !!dashed);
+            });
+        };
+        resolve(node.dataset.creates, '#38bdf8', false);
+        resolve(node.dataset.uses,    '#a78bfa', false);
+        resolve(node.dataset.calls,   '#f87171', true);
+    });
+
+    buildParticles();
+    animate();
+}
+
+function buildParticles() {
+    particles = [];
+    drawnPaths.forEach((dp, idx) => {
+        const count = dp.dashed ? 1 : 2;
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                pathIndex: idx,
+                t: (i + Math.random() * 0.5) / count,
+                speed: 0.0013 + Math.random() * 0.0009,
+                color: dp.color,
+                radius: dp.dashed ? 2 : 2.8,
+                alpha: 0,
+            });
+        }
+    });
+}
+
+function hexToRgba(hex, a) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    particles.forEach(p => {
+        const dp = drawnPaths[p.pathIndex];
+        if (!dp) return;
+
+        p.t += p.speed;
+        if (p.t > 1) p.t -= 1;
+        if (p.alpha < 1) p.alpha = Math.min(1, p.alpha + 0.015);
+
+        const path  = dp.path;
+        const tl    = path.getTotalLength();
+        const pt    = path.getPointAtLength(p.t * tl);
+        const baseA = dp.highlighted ? 1 : 0.45;
+        const alpha = p.alpha * baseA;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, p.radius * 3, 0, Math.PI * 2);
+        const grd = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, p.radius * 3);
+        grd.addColorStop(0, hexToRgba(p.color, 0.35 * alpha));
+        grd.addColorStop(1, hexToRgba(p.color, 0));
+        ctx.fillStyle = grd;
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = hexToRgba(p.color, 0.95 * alpha);
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur  = dp.highlighted ? 12 : 5;
+        ctx.fill();
+        ctx.restore();
+    });
+
+    animId = requestAnimationFrame(animate);
+}
+
+// ── Click interactions ─────────────────────────────────────────
+nodes.forEach(node => {
+    node.addEventListener('click', e => {
+        e.stopPropagation();
+        if (didDrag) return; // ignore click at end of a drag
+
+        const skill = node.dataset.skill;
+
+        nodes.forEach(n => n.classList.remove('active','dimmed'));
+        document.querySelectorAll('.svg-path').forEach(el => el.setAttribute('opacity','0.06'));
+        document.querySelectorAll('.svg-arrow').forEach(el => el.setAttribute('opacity','0.06'));
+        drawnPaths.forEach(p => { p.highlighted = false; });
+
+        const connected = new Set([skill]);
+        drawnPaths.forEach(dp => {
+            if (dp.fromSkill === skill || dp.toSkill === skill) {
+                connected.add(dp.fromSkill);
+                connected.add(dp.toSkill);
+                dp.highlighted = true;
+                document.querySelectorAll(`.svg-path[data-from="${dp.fromSkill}"][data-to="${dp.toSkill}"]`)
+                    .forEach(el => el.setAttribute('opacity','0.9'));
+                document.querySelectorAll(`.svg-arrow[data-from="${dp.fromSkill}"][data-to="${dp.toSkill}"]`)
+                    .forEach(el => el.setAttribute('opacity','0.9'));
+            }
+        });
+
+        nodes.forEach(n => {
+            n.classList.add(connected.has(n.dataset.skill) ? 'active' : 'dimmed');
+        });
+
+        particles.forEach(p => {
+            p.speed = drawnPaths[p.pathIndex]?.highlighted
+                ? 0.003 + Math.random() * 0.001
+                : 0.0013 + Math.random() * 0.0009;
+        });
+
+        showInfo(node);
+    });
+});
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.skill-node') && !e.target.closest('.info-panel')) {
+        closeInfo(); resetHighlight();
+    }
+});
+
+function resetHighlight() {
+    nodes.forEach(n => n.classList.remove('active','dimmed'));
+    document.querySelectorAll('.svg-path').forEach(el => el.setAttribute('opacity','0.3'));
+    document.querySelectorAll('.svg-arrow').forEach(el => el.setAttribute('opacity','0.35'));
+    drawnPaths.forEach(p => { p.highlighted = false; });
+    particles.forEach(p => { p.speed = 0.0013 + Math.random() * 0.0009; });
+}
+
+// ── Info panel ─────────────────────────────────────────────────
+const tagClass = { ingestor:'tag-ingestor', intelligence:'tag-intelligence', renderer:'tag-renderer', central:'tag-central' };
+const tagLabel = { ingestor:'Ingestor', intelligence:'Intelligence Engine', renderer:'Output Renderer', central:'Central Artifact' };
+
+function showInfo(node) {
+    const type = node.dataset.type || 'intelligence';
+    const tag  = document.getElementById('infoTag');
+    tag.className = `info-tag ${tagClass[type] || 'tag-intelligence'}`;
+    tag.textContent = node.dataset.label || tagLabel[type] || type;
+
+    document.getElementById('infoTitle').textContent = node.querySelector('.skill-name')?.textContent || node.dataset.skill;
+    document.getElementById('infoDesc').textContent  = node.dataset.desc || '';
+
+    let html = '';
+    if (node.dataset.creates) html += `<p><strong>Creates:</strong> ${node.dataset.creates}</p>`;
+    if (node.dataset.uses)    html += `<p><strong>Uses:</strong> ${node.dataset.uses}</p>`;
+    if (node.dataset.calls)   html += `<p><strong>Calls:</strong> ${node.dataset.calls.replace(/,/g,', ')}</p>`;
+    document.getElementById('infoConn').innerHTML = html;
+
+    infoPanel.style.display = 'block';
+    requestAnimationFrame(() => infoPanel.classList.add('visible'));
+}
+
+function closeInfo() {
+    infoPanel.classList.remove('visible');
+    setTimeout(() => { if (!infoPanel.classList.contains('visible')) infoPanel.style.display = 'none'; }, 180);
+}
+
+// ── Init ───────────────────────────────────────────────────────
+function init() {
+    resizeCanvas();
+    buildConnections();
+}
+
+window.addEventListener('load',   () => setTimeout(init, 100));
+window.addEventListener('resize', () => { resizeCanvas(); buildConnections(); });
+</script>
+</body>
+</html>
