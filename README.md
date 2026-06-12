@@ -2,8 +2,6 @@
 
 > Autonomous signal gathering · Evidence-based state updates · Human approval gate · Instant outputs
 
-Built by Milton Lee, FinProd/Lending TPM at Uber. TPM OS turns fragmented program signals into a single verified truth model — and challenges every proposed update before anything commits.
-
 ---
 
 ## What it does
